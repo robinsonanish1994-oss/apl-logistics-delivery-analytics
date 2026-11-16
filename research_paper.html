@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Delivery Performance, Delay Risk, and Logistics Efficiency Analysis in Global Supply Chain Operations</title>
+<style>
+  @page { size: A4; margin: 20mm 18mm 20mm 18mm; }
+  body { font-family: "Georgia", "Times New Roman", serif; font-size: 10.6pt; line-height: 1.5; color: #1a1a1a; }
+  h1 { font-size: 18pt; text-align: center; margin: 0 0 6px; line-height: 1.25; }
+  .meta { text-align: center; color: #444; font-size: 10pt; margin-bottom: 14px; }
+  .abstract { border-top: 1px solid #999; border-bottom: 1px solid #999; padding: 8px 4px; margin: 10px 0 16px; font-size: 10pt; }
+  .abstract b { font-variant: small-caps; }
+  h2 { font-size: 12.5pt; margin: 18px 0 6px; border-bottom: 1px solid #ddd; padding-bottom: 2px; page-break-after: avoid; }
+  h3 { font-size: 11pt; margin: 12px 0 4px; page-break-after: avoid; }
+  p { margin: 5px 0 7px; text-align: justify; }
+  table { border-collapse: collapse; width: 100%; margin: 8px 0 4px; font-family: "Helvetica", Arial, sans-serif; font-size: 8.8pt; page-break-inside: avoid; }
+  th, td { border-bottom: 1px solid #ddd; padding: 3px 6px; text-align: right; }
+  th { background: #f0efec; border-bottom: 1.5px solid #888; }
+  td:first-child, th:first-child { text-align: left; }
+  .cap { font-size: 8.8pt; color: #555; text-align: center; margin: 2px 0 12px; font-style: italic; }
+  figure { margin: 10px 0; text-align: center; page-break-inside: avoid; }
+  figure img { max-width: 100%; }
+  figure.wide img { width: 100%; border: 1px solid #ddd; }
+  figcaption { font-size: 8.8pt; color: #555; font-style: italic; }
+  .box { background: #f4f7fc; border-left: 3px solid #2a78d6; padding: 6px 10px; margin: 8px 0; font-size: 10pt; }
+  ol, ul { margin: 4px 0 8px 18px; padding-left: 6px; }
+  li { margin: 2px 0; }
+  code { font-family: Menlo, Consolas, monospace; font-size: 9pt; background: #f4f4f2; padding: 0 3px; }
+  .refs li { font-size: 9.4pt; }
+  .pb { page-break-before: always; }
+</style>
+</head>
+<body>
+
+<h1>Delivery Performance, Delay Risk, and Logistics Efficiency Analysis in Global Supply Chain Operations</h1>
+<div class="meta">
+  Anish R &middot; Data Analytics Internship, Unified Mentor &middot; Project partner: APL Logistics (KWE Group)<br>
+  November 2026
+</div>
+
+<div class="abstract">
+<b>Abstract.</b> Late deliveries drive SLA penalties, cost overruns and lost customer trust, yet many logistics teams
+detect them only after the fact. This paper analyses 180,519 order-level shipment records from APL Logistics' global
+operations to measure on-time performance, explain the drivers of <code>Late_delivery_risk</code>, and locate
+high-risk shipping modes, geographies and customer segments. After cleaning (7,754 cancelled shipments removed), we
+compute a <i>Delay Gap</i> (actual minus scheduled shipping days) for 172,765 delivered orders. Only
+<b>42.7%</b> of orders arrive within the scheduled time; the mean delay gap is <b>+0.57 days</b> and a late order
+arrives on average <b>1.62 days</b> behind schedule. The dominant driver is the shipping mode itself
+(Cram&eacute;r's V = 0.48): <b>every First Class order is late</b> because it takes 2 days against a 1-day promise,
+and Second Class misses its 2-day promise <b>79.8%</b> of the time because its actual transit-time distribution is
+identical to Standard Class. Market, customer segment, product department and payment type have practically no
+effect (V &le; 0.007). Region and country differences are statistically detectable but small (51.6%&ndash;60.1% late
+across regions). We show that realigning service promises with true transit capability, or fixing the premium-lane
+execution, would lift on-time performance from 42.7% to between 58% and 74%. An interactive Streamlit dashboard
+accompanies the paper.
+<br><b>Keywords:</b> delivery performance, SLA compliance, late delivery risk, logistics analytics, shipping mode efficiency, supply chain diagnostics
+</div>
+
+<h2>1. Introduction</h2>
+<p>In large-scale global logistics, delivery timeliness is the most visible measure of service quality. Delays lead
+directly to service-level agreement (SLA) violations and penalties; a mismatch between planned and actual shipping
+time raises cost through expediting and customer-service effort; and poorly matched shipping modes erode customer
+satisfaction. Because regional bottlenecks are often recognised only after complaints accumulate, operations teams
+tend to work reactively.</p>
+<p>APL Logistics, part of the KWE Group, handles high-volume, multi-region shipments, which makes continuous delivery
+performance monitoring essential. The organisation holds detailed order and shipping data but lacks (i) a clear
+measurement of on-time versus delayed deliveries, (ii) an understanding of why shipments are delayed, (iii) visibility
+into high-risk regions, markets and shipping modes, and (iv) diagnostics explaining the <code>Late_delivery_risk</code>
+flag. This study builds that diagnostic layer and answers five questions:</p>
+<ol>
+  <li>What percentage of shipments are delivered on time?</li>
+  <li>Which shipping modes experience the highest delays?</li>
+  <li>Which countries, markets and regions carry the greatest delivery risk?</li>
+  <li>How are delivery delays distributed across customer segments?</li>
+  <li>What operational improvements could reduce delays and SLA violations?</li>
+</ol>
+
+<h2>2. Data</h2>
+<p>The dataset contains <b>180,519 order-item records and 40 fields</b> covering payment type, scheduled and actual
+shipping days, delivery status, the binary <code>Late_delivery_risk</code> flag, product category and department,
+customer attributes (segment, city, state, country), order geography (city, state, country, region, market), pricing,
+discount, sales and profit, order status and shipping mode. Four shipping modes (Standard, Second, First Class and
+Same Day), five markets, 23 order regions and 164 order countries are represented. Two fields contained minor
+missing values (8 customer last names and 3 zip codes), neither of which is used in the analysis. The supplied extract
+carries <b>no order-date field</b>, so time-trend analysis is out of scope; the dashboard's date-range selector
+activates automatically if a dated extract is supplied.</p>
+
+<h2>3. Methodology</h2>
+<h3>3.1 Data cleaning and validation</h3>
+<ul>
+  <li><b>Shipping-duration validation:</b> both duration fields were coerced to numeric and checked for negative or
+  implausible (&gt; 60 day) values. None were found. Scheduled days take only the values 0, 1, 2 and 4, each mapping
+  one-to-one to a shipping mode (Same Day = 0, First Class = 1, Second Class = 2, Standard Class = 4).</li>
+  <li><b>Inconsistent and missing delivery records:</b> no duplicates and no missing key fields were found.
+  <b>7,754 records with status &ldquo;Shipping canceled&rdquo; were removed</b>, because a cancelled shipment never
+  completed delivery and its shipping-day values are not meaningful for timeliness. We also cross-checked
+  <code>Late_delivery_risk</code> against <code>Delivery Status</code>: the flag equals 1 exactly when status is
+  &ldquo;Late delivery&rdquo; (0 conflicts).</li>
+  <li><b>Standardisation:</b> the 164 order-country names, recorded in Spanish (e.g. <i>Alemania</i>,
+  <i>Estados Unidos</i>), were mapped to English names and ISO-3166 alpha-3 codes for mapping; a double space in
+  &ldquo;South of&nbsp;&nbsp;USA&rdquo; was normalised; customer country &ldquo;EE. UU.&rdquo; was standardised to
+  &ldquo;United States&rdquo;; and customer personal data (names, street, zip code) were dropped.</li>
+</ul>
+<p>The analytical base is therefore <b>172,765 delivered orders</b>.</p>
+
+<h3>3.2 Delivery gap and classification</h3>
+<p>For each order, <b>Delay Gap = Days for shipping (real) &minus; Days for shipment (scheduled)</b>. Orders are
+classified as <i>Early</i> (gap &lt; 0), <i>On-time</i> (gap = 0) or <i>Delayed</i> (gap &gt; 0). In the cleaned data
+this classification matches the source <code>Delivery Status</code> exactly (Advance shipping / Shipping on time /
+Late delivery).</p>
+
+<h3>3.3 Key performance indicators</h3>
+<table>
+<tr><th>KPI</th><th style="text-align:left">Definition used</th></tr>
+<tr><td>On-Time Delivery Rate (%)</td><td style="text-align:left">Share of orders with Delay Gap &le; 0 (delivered within scheduled time)</td></tr>
+<tr><td>Average Delivery Delay (days)</td><td style="text-align:left">Mean Delay Gap (actual &minus; scheduled)</td></tr>
+<tr><td>Late Delivery Risk Ratio</td><td style="text-align:left">Mean of <code>Late_delivery_risk</code> (proportion of delayed shipments)</td></tr>
+<tr><td>Shipping Mode Efficiency Index</td><td style="text-align:left">Mode late ratio &divide; network late ratio (1.00 = average; &gt; 1 = worse)</td></tr>
+<tr><td>Regional Delay Index</td><td style="text-align:left">Region/market/country late ratio &divide; network late ratio</td></tr>
+</table>
+<p>To separate real effects from noise, each dimension was tested against lateness with a chi-square test of
+independence, and effect size is reported as Cram&eacute;r's V (0 = no association, 1 = perfect association).
+Country-level rankings use a minimum of 500 orders.</p>
+
+<h2>4. Results</h2>
+<h3>4.1 Overall delivery performance (Q1)</h3>
+<p>Of the 172,765 delivered orders, <b>42.7% arrived within the scheduled time</b>: 24.1% early and 18.6% exactly
+on schedule. The remaining <b>57.3% were late</b> (98,977 orders). The mean Delay Gap across all orders is
+<b>+0.57 days</b>; among late orders it is <b>+1.62 days</b>. Late orders account for <b>$20.1M of $35.2M (57.2%)
+in sales</b>, so SLA exposure is proportional to volume rather than concentrated in low-value orders. Average profit
+per order differs little between delayed ($21.62), on-time ($22.71) and early ($22.49) orders, which suggests the cost
+of lateness is not yet visible in recorded margin. It surfaces instead as penalty and customer-retention risk.</p>
+<figure><img src="fig1_delivery_class.png" style="width:85%"></figure>
+
+<table>
+<tr><th>Delay Gap (days)</th><th>&minus;2</th><th>&minus;1</th><th>0</th><th>+1</th><th>+2</th><th>+3</th><th>+4</th></tr>
+<tr><td>Orders</td><td>20,873</td><td>20,719</td><td>32,196</td><td>57,957</td><td>27,551</td><td>6,772</td><td>6,697</td></tr>
+<tr><td>Share</td><td>12.1%</td><td>12.0%</td><td>18.6%</td><td>33.5%</td><td>15.9%</td><td>3.9%</td><td>3.9%</td></tr>
+</table>
+<div class="cap">Table 1. Distribution of the delivery delay gap (n = 172,765).</div>
+<p>The single most common outcome is a <b>one-day overrun</b> (33.5% of all orders). Severe delays of 3&ndash;4 days
+make up 7.8%. As Section 4.2 shows, all of them come from Second Class and Standard Class shipments.</p>
+<figure><img src="fig2_delay_gap_hist.png" style="width:85%"></figure>
+
+<h3>4.2 Shipping mode efficiency (Q2)</h3>
+<table>
+<tr><th>Shipping mode</th><th>Orders</th><th>Scheduled days</th><th>Mean actual days</th><th>Avg gap</th><th>Late ratio</th><th>Efficiency index</th></tr>
+<tr><td>First Class</td><td>26,513</td><td>1</td><td>2.00</td><td>+1.00</td><td>100.0%</td><td>1.75</td></tr>
+<tr><td>Second Class</td><td>33,806</td><td>2</td><td>3.99</td><td>+1.99</td><td>79.8%</td><td>1.39</td></tr>
+<tr><td>Same Day</td><td>9,293</td><td>0</td><td>0.48</td><td>+0.48</td><td>47.9%</td><td>0.84</td></tr>
+<tr><td>Standard Class</td><td>103,153</td><td>4</td><td>3.99</td><td>&minus;0.01</td><td>39.8%</td><td>0.69</td></tr>
+</table>
+<div class="cap">Table 2. Delivery KPIs by shipping mode. Efficiency index = mode late ratio &divide; network late ratio (57.3%).</div>
+<p>Shipping mode is by far the strongest driver of delay (&chi;&sup2; = 40,059, p &lt; 0.001, Cram&eacute;r's V = 0.48).
+Three patterns stand out:</p>
+<ul>
+  <li><b>First Class is structurally late.</b> Every First Class order (100%) is shipped in exactly 2 days against a
+  1-day schedule. There is no variability (standard deviation 0). The service promise, not execution variance, causes
+  the breach.</li>
+  <li><b>Second Class offers no speed advantage over Standard Class.</b> Actual transit days for both modes are spread
+  almost perfectly evenly across 2, 3, 4, 5 and 6 days (about 20% each) with an identical mean of 3.99 days. Second Class
+  promises 2 days and so fails 79.8% of the time with an average overrun of nearly 2 days. Standard Class promises
+  4 days and is late only when it takes 5 or 6 days (39.8%).</li>
+  <li><b>Same Day</b> splits roughly evenly between same-day (52.1%) and next-day (47.9%) delivery.</li>
+</ul>
+<p>The premium modes (First and Second Class) carry 35% of orders but generate <b>54.1% of all late deliveries</b>.</p>
+<figure><img src="fig3_mode_late_ratio.png" style="width:85%"></figure>
+<figure><img src="fig4_sched_vs_real.png" style="width:85%"></figure>
+
+<h3>4.3 Regional and market diagnostics (Q3)</h3>
+<p><b>Markets.</b> The five markets are almost indistinguishable: late ratios range from 56.8% (Africa) to 57.7%
+(Europe). This spread is not statistically significant (&chi;&sup2; = 7.8, p = 0.10, V = 0.007). Each market also
+uses nearly the same shipping-mode mix (about 59&ndash;61% Standard, 15&ndash;16% First Class), and within each mode the
+market late ratios are essentially identical (First Class 100% everywhere; Standard 39.6&ndash;40.0%).</p>
+<figure><img src="fig5_market.png" style="width:80%"></figure>
+<p><b>Regions.</b> Differences across the 23 order regions are statistically significant but small
+(&chi;&sup2; = 76.6, p &lt; 0.001, V = 0.021). <b>Central Africa</b> has the highest late ratio (60.1%, n = 1,616,
+index 1.05), followed by <b>Western Europe</b> (58.5%, n = 25,867), which matters most because of its volume,
+then <b>South of USA</b> (58.5%) and <b>South Asia</b> (58.4%). <b>Canada</b> performs best (51.6%, n = 907), followed by
+West Africa (54.7%) and the Caribbean (55.5%).</p>
+<figure><img src="fig6_region.png" style="width:78%"></figure>
+<p><b>Countries.</b> Among the 50 countries with at least 500 orders, the highest-risk are <b>Malaysia (63.0%)</b>,
+<b>Chile (62.7%)</b>, <b>DR Congo (61.8%)</b>, <b>South Korea (61.6%)</b>, Peru (60.6%) and Austria (60.5%).
+<b>Germany</b> (58.8%, 9,154 orders) is the largest high-risk country by volume. Lowest-risk countries include Canada
+(51.6%), Panama (52.3%), Iraq (53.1%) and Japan (53.4%). For a country with about 500 orders the 95% confidence
+interval is roughly &plusmn;4 percentage points. Country rankings should therefore be read as a watch-list for
+investigation, not as confirmed bottlenecks.</p>
+<figure><img src="fig7_countries.png" style="width:80%"></figure>
+
+<h3>4.4 Customer segment impact (Q4)</h3>
+<table>
+<tr><th>Segment</th><th>Orders</th><th>Late ratio</th><th>Avg gap</th><th>Late-order sales (SLA exposure)</th></tr>
+<tr><td>Home Office</td><td>30,817</td><td>57.6%</td><td>+0.58</td><td>$3.58M</td></tr>
+<tr><td>Consumer</td><td>89,420</td><td>57.3%</td><td>+0.57</td><td>$10.45M</td></tr>
+<tr><td>Corporate</td><td>52,528</td><td>57.1%</td><td>+0.56</td><td>$6.10M</td></tr>
+</table>
+<div class="cap">Table 3. Delay by customer segment. Differences are not significant (&chi;&sup2; = 2.1, p = 0.35, V = 0.003).</div>
+<p>Delays are distributed evenly across segments, and Corporate (enterprise) customers are delayed exactly as often
+as consumers. All segments use the same mode mix (about 15&ndash;16% First Class), so <b>every segment buying First
+Class receives a guaranteed SLA breach</b>. In absolute terms, Corporate accounts carry <b>$6.1M</b> of sales on late
+orders. That is the most contract-sensitive exposure, because enterprise SLAs usually carry financial penalties.</p>
+<figure><img src="fig8_segment_mode.png" style="width:85%"></figure>
+
+<h3>4.5 What does <i>not</i> explain delay</h3>
+<table>
+<tr><th>Dimension</th><th>&chi;&sup2;</th><th>d.f.</th><th>p-value</th><th>Cram&eacute;r's V</th><th>Interpretation</th></tr>
+<tr><td>Shipping mode</td><td>40,058.7</td><td>3</td><td>&lt; 0.001</td><td>0.482</td><td style="text-align:left">Strong driver</td></tr>
+<tr><td>Order country</td><td>573.6</td><td>163</td><td>&lt; 0.001</td><td>0.058</td><td style="text-align:left">Weak</td></tr>
+<tr><td>Order region</td><td>76.6</td><td>22</td><td>&lt; 0.001</td><td>0.021</td><td style="text-align:left">Very weak</td></tr>
+<tr><td>Market</td><td>7.8</td><td>4</td><td>0.099</td><td>0.007</td><td style="text-align:left">None</td></tr>
+<tr><td>Department</td><td>6.9</td><td>10</td><td>0.738</td><td>0.006</td><td style="text-align:left">None</td></tr>
+<tr><td>Payment type</td><td>5.2</td><td>3</td><td>0.158</td><td>0.005</td><td style="text-align:left">None</td></tr>
+<tr><td>Customer segment</td><td>2.1</td><td>2</td><td>0.350</td><td>0.003</td><td style="text-align:left">None</td></tr>
+</table>
+<div class="cap">Table 4. Association of each dimension with late delivery (n = 172,765).</div>
+
+<h2>5. Discussion</h2>
+<p>The central finding is that APL's lateness problem is mainly a <b>service-design problem, not a geographic
+one</b>. The <code>Late_delivery_risk</code> flag is almost fully explained by the gap between what each shipping
+mode promises and what the network actually delivers. Transit times for Second and Standard Class follow the same
+2&ndash;6 day pattern, which indicates that both modes probably move through the same physical lanes and that the
+&ldquo;Second Class&rdquo; label is not linked to any faster handling. First Class is processed on a consistent
+2-day cycle, so its 1-day promise can never be met. Because the late rate is about 57% in every market and segment,
+fixes aimed at specific regions or customers would leave most of the problem untouched.</p>
+<p>The regional and country variation that does exist (about 9 percentage points between Canada and Central Africa)
+is real but secondary. It is best handled as targeted investigation of specific lanes (Central Africa, Western
+Europe/Germany, South Asia, and the country watch-list) after the mode-level fixes are in place.</p>
+
+<h3>5.1 Improvement scenarios</h3>
+<table>
+<tr><th>Scenario</th><th>On-time delivery rate</th><th>Change</th></tr>
+<tr><td>Baseline (current)</td><td>42.7%</td><td>&ndash;</td></tr>
+<tr><td>A. First Class promise reset to 2 days (matches actual)</td><td>58.1%</td><td>+15.3 pp</td></tr>
+<tr><td>B. A + Same Day promise reset to &ldquo;by next day&rdquo; (1 day)</td><td>60.6%</td><td>+17.9 pp</td></tr>
+<tr><td>C. B + Second Class promise reset to 4 days</td><td>68.5%</td><td>+25.7 pp</td></tr>
+<tr><td>D. Operational fix: First Class executed in 1 day, Second Class capped at 2 days</td><td>73.7%</td><td>+31.0 pp</td></tr>
+</table>
+<div class="cap">Table 5. Simulated on-time rate under alternative promises or execution (recomputed on the cleaned dataset).</div>
+<p>Scenarios A&ndash;C change the promise and are achievable immediately, though they reduce the commercial
+differentiation of premium modes. Scenario D keeps the promises and fixes execution, which is harder but preserves
+premium pricing. A realistic plan combines both: reset the promises now, then gradually restore premium SLAs as the
+dedicated lanes are proven.</p>
+
+<h2>6. Recommendations (Q5)</h2>
+<ol>
+  <li><b>Fix First Class immediately.</b> Either stop selling a 1-day promise that is never met (re-quote 2 days), or
+  set up a genuine next-day lane (cut-off times, dedicated linehaul, priority pick/pack). This single change removes
+  26,513 guaranteed SLA breaches, 27% of all late orders.</li>
+  <li><b>Separate Second Class from Standard Class operationally.</b> Its transit profile is identical to Standard
+  Class. Route Second Class through a faster lane with a 2&ndash;3 day cap, or re-price and re-promise it at
+  4 days.</li>
+  <li><b>Cut Standard Class tail delays.</b> 39.8% of Standard orders take 5&ndash;6 days against a 4-day promise.
+  Trigger an exception alert on day 3 for any order that is not yet out for delivery.</li>
+  <li><b>Make the promise date-aware.</b> Quote delivery dates using the empirical transit-time distribution per
+  mode and lane, rather than a fixed nominal day count.</li>
+  <li><b>Protect enterprise SLAs.</b> Flag Corporate orders placed on First or Second Class for proactive tracking and
+  communication. These orders represent $6.1M in late-order sales and the highest penalty risk.</li>
+  <li><b>Run lane-level reviews in high-index regions</b>: Central Africa (index 1.05), Western Europe and Germany
+  (high volume), South of USA, South Asia, and watch-list countries (Malaysia, Chile, DR Congo, South Korea, Peru,
+  Austria). Investigate carrier performance and customs dwell time.</li>
+  <li><b>Institutionalise monitoring.</b> Track the five KPIs weekly in the Streamlit dashboard, set targets (for example,
+  on-time rate &ge; 70% and First Class index &le; 1.0), and add order and ship dates to the data feed to enable trend
+  and early-warning analysis.</li>
+  <li><b>Next step: predictive modelling.</b> With date, carrier and warehouse fields added, a classifier can score
+  each order's delay risk at booking time. That turns this diagnostic layer into a preventive one.</li>
+</ol>
+
+<h2>7. Limitations</h2>
+<ul>
+  <li>The extract has no order or shipment dates, so seasonality, trends and lead-time-to-ship effects cannot be
+  assessed.</li>
+  <li>Shipping days are recorded as integers, which limits resolution (a 1.2-day and a 1.9-day transit both appear as
+  1 or 2).</li>
+  <li>No carrier, warehouse or route identifiers are present, so root causes inside a mode or region cannot be
+  attributed to specific partners.</li>
+  <li>Records are order items; multi-item orders are counted once per item, which slightly over-weights large orders.</li>
+  <li>The improvement scenarios are deterministic recomputations, not causal estimates of operational change.</li>
+</ul>
+
+<h2>8. Conclusion</h2>
+<p>APL Logistics delivers only 42.7% of orders within the scheduled time. The cause is clear: premium shipping modes
+promise transit times the network does not deliver. First Class is late 100% of the time and Second Class 79.8% of
+the time, while market, customer segment, product and payment method have no meaningful influence. Geographic
+differences are real but small. Aligning promises with true capability, and then building genuinely faster premium
+lanes, could raise on-time performance to about 60&ndash;74%. The accompanying Streamlit dashboard gives logistics teams
+the measurements needed to move from reactive firefighting to preventive, data-driven operational control. It is
+the foundation for future predictive and optimisation models.</p>
+
+<h2 class="pb">Appendix A. Streamlit dashboard</h2>
+<p>The dashboard (<code>app.py</code>) has four modules: Delivery Performance Overview (on-time vs late KPIs, average
+delay scorecards), Delay Risk Analysis (<code>Late_delivery_risk</code> distribution, delay gap histograms), Shipping
+Mode Comparison (mode-wise delay performance, SLA compliance by mode) and Regional &amp; Market Heatmaps (world
+choropleth, market-wise efficiency, regional delay index, region &times; mode heatmap). Filters cover shipping mode,
+market, region, customer segment, scheduled-SLA band, and order date (when available).</p>
+<figure class="wide"><img src="dashboard_overview.png"><figcaption>Fig. A1. Delivery Performance Overview module.</figcaption></figure>
+<figure class="wide"><img src="dashboard_shipping_mode.png"><figcaption>Fig. A2. Shipping Mode Comparison module.</figcaption></figure>
+
+<h2>Appendix B. Reproducibility</h2>
+<p>All figures and tables are produced by <code>python run_analysis.py</code> from the repository root.
+Cleaning logic is in <code>data_prep.py</code> and KPI logic in <code>kpis.py</code>, shared by the paper
+and the dashboard so that the numbers always agree.</p>
+
+<h2>References</h2>
+<ol class="refs">
+  <li>Chopra, S., &amp; Meindl, P. (2016). <i>Supply Chain Management: Strategy, Planning, and Operation</i> (6th ed.). Pearson.</li>
+  <li>Constante, F., Silva, F., &amp; Pereira, A. (2019). DataCo Smart Supply Chain for Big Data Analysis. Mendeley Data, V5. doi:10.17632/8gx2fvg2k6.5</li>
+  <li>Cram&eacute;r, H. (1946). <i>Mathematical Methods of Statistics</i>. Princeton University Press.</li>
+  <li>Gunasekaran, A., Patel, C., &amp; McGaughey, R. E. (2004). A framework for supply chain performance measurement. <i>International Journal of Production Economics</i>, 87(3), 333&ndash;347.</li>
+  <li>Waller, M. A., &amp; Fawcett, S. E. (2013). Data science, predictive analytics, and big data: a revolution that will transform supply chain design and management. <i>Journal of Business Logistics</i>, 34(2), 77&ndash;84.</li>
+</ol>
+</body>
+</html>
