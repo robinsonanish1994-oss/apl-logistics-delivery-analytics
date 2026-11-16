@@ -5,7 +5,7 @@ An end-to-end diagnostic analytics project that measures on-time delivery perfor
 `Late_delivery_risk`, and finds high-risk shipping modes, regions, markets and customer segments. It includes an
 interactive **Streamlit dashboard**.
 
-**🔗 Live dashboard:** `<your-app>.streamlit.app` &nbsp;|&nbsp; **📄 Research paper:** [research_paper.pdf](research_paper.pdf) &nbsp;|&nbsp; **📝 Executive summary:** [executive_summary.pdf](executive_summary.pdf) &nbsp;|&nbsp;
+**🔗 Live dashboard:** `https://apl-logistics-delivery.streamlit.app/` &nbsp;|&nbsp; **📄 Research paper:** [research_paper.pdf](research_paper.pdf) &nbsp;|&nbsp; **📝 Executive summary:** [executive_summary.pdf](executive_summary.pdf) &nbsp;|&nbsp;
 
 ---
 
