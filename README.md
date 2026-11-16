@@ -5,7 +5,7 @@ An end-to-end diagnostic analytics project that measures on-time delivery perfor
 `Late_delivery_risk`, and finds high-risk shipping modes, regions, markets and customer segments. It includes an
 interactive **Streamlit dashboard**.
 
-**🔗 Live dashboard:** `<your-app>.streamlit.app` &nbsp;|&nbsp; **📄 Research paper:** [research_paper.pdf](research_paper.pdf) &nbsp;|&nbsp; **📝 Executive summary:** [executive_summary.pdf](executive_summary.pdf) &nbsp;|&nbsp; **🎬 Video scripts:** [video_scripts.md](video_scripts.md)
+**🔗 Live dashboard:** `<your-app>.streamlit.app` &nbsp;|&nbsp; **📄 Research paper:** [research_paper.pdf](research_paper.pdf) &nbsp;|&nbsp; **📝 Executive summary:** [executive_summary.pdf](executive_summary.pdf) &nbsp;|&nbsp;
 
 ---
 
@@ -69,7 +69,6 @@ The date selector activates automatically if the data contains an order-date col
 | `executive_summary.pdf` / `.html` | Executive summary for government stakeholders |
 | `fig*.png`, `dashboard_*.png` | Figures and dashboard screenshots used in the paper |
 | `*.csv`, `summary.json` | KPI tables produced by `run_analysis.py` |
-| `video_scripts.md` | Scripts for the project and internship videos |
 | `.streamlit/config.toml` | Dashboard colour theme |
 
 ## Run locally
